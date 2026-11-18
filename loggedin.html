@@ -12,34 +12,58 @@
         <div class="title">
             <h1 class="title-text">Handmade Haven</h1>
             <div class="auth">
-            <button class="login-button" id="login-toggle" type="button" aria-expanded="false" aria-controls="auth-dropdown">
-                profile
-            </button>
-            <section class="auth-dropdown" id="auth-dropdown" aria-label="Account access" hidden>
-                <div class="profile-base">
-                    <img src="sal.jpg" alt="" class="profile-pic">
-                    <h1>Welcome</h1>
-                    <h1 id="profile-username">Your profile</h1>
-                    <h2 class="profile-email" id="profile-email"></h2>
-                    <button class="auth-submit" id="sign-out" type="button">Log out</button>
+                <button class="login-button" id="login-toggle" type="button" aria-expanded="false" aria-controls="auth-dropdown">
+                    Login / Register
+                </button>
+                <section class="auth-dropdown" id="auth-dropdown" aria-label="Account access" hidden>
+                    <div class="auth-tabs" role="tablist" aria-label="Choose an account action">
+                        <button class="auth-tab" id="login-tab" type="button" role="tab" aria-selected="true" aria-controls="login-form">Log in</button>
+                        <button class="auth-tab" id="signup-tab" type="button" role="tab" aria-selected="false" aria-controls="signup-form">Create account</button>
+                    </div>
+                    <form id="login-form" class="auth-form" role="tabpanel" aria-labelledby="login-tab">
+                        <h2>Log in</h2>
+                        <label for="login-email">Email</label>
+                        <input id="login-email" name="email" type="email" autocomplete="email" required>
+                        <label for="login-password">Password</label>
+                        <input id="login-password" name="password" type="password" autocomplete="current-password" required>
+                        <button class="auth-submit" type="submit">Log in</button>
+                        <button class="auth-tab" id="forgotPassword" type="button">Forgot password</button>
+                    </form>
+                    <form id="signup-form" class="auth-form" role="tabpanel" aria-labelledby="signup-tab" hidden>
+                        <h2>Create account</h2>
+                        <label for="signUpFirstName">First name</label>
+                        <input id="signUpFirstName" name="firstName" type="text" autocomplete="given-name" required>
+                        <label for="signUpLastName">Last name</label>
+                        <input id="signUpLastName" name="lastName" type="text" autocomplete="family-name" required>
+                        <label for="signUpEmail">Email</label>
+                        <input id="signUpEmail" name="email" type="email" autocomplete="email" required>
+                        <label for="signUpPassword">Password (at least 6 characters)</label>
+                        <input id="signUpPassword" name="password" type="password" autocomplete="new-password" minlength="6" required>
+                        <button class="auth-submit" type="submit">Create account</button>
+                    </form>
                     <p class="auth-message" id="auth-message" role="status" aria-live="polite"></p>
-                </div>
-            </section>
-        </div>
-
+                </section>
+                <section class="profile-dropdown" id="profile-dropdown" aria-label="Signed-in profile" hidden>
+                    <div class="profile-base" id="profile-base">
+                        <h1>Welcome</h1>
+                        <h2 id="profile-username">Your profile</h2>
+                        <p class="profile-email" id="profile-email"></p>
+                        <button class="auth-submit" id="sign-out" type="button">Log out</button>
+                    </div>
+                    <p class="auth-message" id="profile-message" role="status" aria-live="polite"></p>
+                </section>
             </div>
         </div>
         <div class="nav-bar">
-            <a href=""><button class="nav-button">home</button></a>
-    
-            <a href=""><button class="nav-button">orders</button></a>
+            <a class="nav-button" href="index.html">home</a>
+            <a class="nav-button" href="orders.html">orders</a>
         </div>
         
     </div>
     <div class="info-base">
         <div><h1>Logged in </h1></div>
     </div>
-<script src="dropdown.js"></script>
+<script src="dropdown.js" defer></script>
 <script type="module" src="login.js"></script>
 </body>
 </html>

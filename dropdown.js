@@ -1,5 +1,6 @@
 const loginToggle = document.querySelector("#login-toggle");
 const authDropdown = document.querySelector("#auth-dropdown");
+const profileDropdown = document.querySelector("#profile-dropdown");
 const loginForm = document.querySelector("#login-form");
 const signupForm = document.querySelector("#signup-form");
 const loginTab = document.querySelector("#login-tab");
@@ -21,14 +22,20 @@ function setAuthMode(mode) {
 
 loginToggle.addEventListener("click", () => {
     const isOpen = loginToggle.getAttribute("aria-expanded") === "true";
-    loginToggle.setAttribute("aria-expanded", String(!isOpen));
-    authDropdown.hidden = isOpen;
+    const activeDropdown = loginToggle.getAttribute("aria-controls") === "profile-dropdown"
+        ? profileDropdown
+        : authDropdown;
 
-    if (!isOpen) {
+    if (profileDropdown) profileDropdown.hidden = true;
+    if (authDropdown) authDropdown.hidden = true;
+    loginToggle.setAttribute("aria-expanded", String(!isOpen));
+    if (activeDropdown) activeDropdown.hidden = isOpen;
+
+    if (!isOpen && activeDropdown === authDropdown) {
         if (loginForm) {
             setAuthMode("login");
         }
-        const firstInput = authDropdown.querySelector("input");
+        const firstInput = activeDropdown?.querySelector("input");
         if (firstInput) {
             firstInput.focus();
         }
@@ -41,15 +48,24 @@ if (loginTab && signupTab) {
 }
 
 document.addEventListener("click", (event) => {
-    if (!authDropdown.hidden && !authDropdown.contains(event.target) && !loginToggle.contains(event.target)) {
-        authDropdown.hidden = true;
+    const activeDropdown = loginToggle.getAttribute("aria-controls") === "profile-dropdown"
+        ? profileDropdown
+        : authDropdown;
+
+    if (activeDropdown && !activeDropdown.hidden &&
+        !activeDropdown.contains(event.target) && !loginToggle.contains(event.target)) {
+        activeDropdown.hidden = true;
         loginToggle.setAttribute("aria-expanded", "false");
     }
 });
 
 document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && !authDropdown.hidden) {
-        authDropdown.hidden = true;
+    const activeDropdown = loginToggle.getAttribute("aria-controls") === "profile-dropdown"
+        ? profileDropdown
+        : authDropdown;
+
+    if (event.key === "Escape" && activeDropdown && !activeDropdown.hidden) {
+        activeDropdown.hidden = true;
         loginToggle.setAttribute("aria-expanded", "false");
         loginToggle.focus();
     }
