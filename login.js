@@ -1,4 +1,4 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
+import { auth, db } from "firebase.js";
 import {
   createUserWithEmailAndPassword,
   getAuth,
@@ -6,124 +6,186 @@ import {
   signInWithEmailAndPassword,
   signOut,
   updateProfile
-} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import {
+    doc,
+    getDoc,
+    setDoc
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyDCGmTPZpz14DXeIKYMe-n86LVe4Xsk3wo",
-  authDomain: "handmade-haven-a0d96.firebaseapp.com",
-  projectId: "handmade-haven-a0d96",
-  storageBucket: "handmade-haven-a0d96.firebasestorage.app",
-  messagingSenderId: "676645082137",
-  appId: "1:676645082137:web:fc264af8fc2204095b4688",
-  measurementId: "G-LFTZYTSRVN"
-};
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const signupForm = document.querySelector("#signup-form");
-const loginForm = document.querySelector("#login-form");
-const authMessage = document.querySelector("#auth-message");
-const profileEmail = document.querySelector("#profile-email");
-const profileUsername = document.querySelector("#profile-username");
-const profileToggle = document.querySelector("#login-toggle");
-const signOutButton = document.querySelector("#sign-out");
-const isProfilePage = Boolean(profileEmail);
-let isCreatingAccount = false;
 
-async function submitAuthForm(form, authenticate, successMessage) {
-  const formData = new FormData(form);
-  const submitButton = form.querySelector('button[type="submit"]');
-  submitButton.disabled = true;
-  if (authMessage) {
-    authMessage.textContent = "Please wait...";
-  }
+const avatar = document.getElementById("profileAvatar");
+const nameEl = document.getElementById("profileName");
+const loggedInSection = document.getElementById("loggedInSection");
+const loggedOutSection = document.getElementById("loggedOutSection");
 
-  try {
-    const user = await authenticate(formData.get("email"), formData.get("password"), formData);
-    if (authMessage) {
-      authMessage.textContent = successMessage(user.email);
+async function loadUser(user) {
+    if (user) {
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        const userData = userDoc.exists() ? userDoc.data() : {};
+
+        const firstName = userData.firstName || "User";
+        const lastName = userData.lastName || "";
+        const role = userData.role || "guest";
+        const clearance = userData.clearance || 1;
+
+        localStorage.setItem("firstName", firstName);
+        localStorage.setItem("lastName", lastName);
+        localStorage.setItem("role", role);
+        localStorage.setItem("clearance", clearance);
+        localStorage.setItem("uid", user.uid);
+
+        avatar.textContent = (firstName[0] + (lastName[0] || "")).toUpperCase();
+        nameEl.textContent = firstName + " " + lastName;
+        loggedInSection.style.display = "block";
+        loggedOutSection.style.display = "none";
+
+        const roleBadge = document.getElementById("userRole");
+        const bowLink = document.getElementById("bowLink");
+        const adminLink = document.getElementById("adminLink");
+
+        if (roleBadge) roleBadge.textContent = role;
+        if (bowLink) bowLink.style.display = parseInt(clearance) >= 4 ? "block" : "none";
+        if (adminLink) {
+            adminLink.style.display = role === "admin" && Number(clearance) >= 6 ? "block" : "none";
+        }
+
+    } else {
+        localStorage.clear();
+        avatar.textContent = "?";
+        nameEl.textContent = "Guest";
+        loggedInSection.style.display = "none";
+        loggedOutSection.style.display = "block";
+
+        const bowLink = document.getElementById("bowLink");
+        const adminLink = document.getElementById("adminLink");
+        if (bowLink) bowLink.style.display = "none";
+        if (adminLink) adminLink.style.display = "none";
     }
-    form.reset();
-    return true;
-  } catch (error) {
-    if (authMessage) {
-      authMessage.textContent = error.message || "Authentication failed. Please try again.";
-    }
-    return false;
-  } finally {
-    submitButton.disabled = false;
-  }
 }
 
-onAuthStateChanged(auth, (user) => {
-  if (isProfilePage) {
-    if (!user) {
-      window.location.replace("handmade-haven.html");
-      return;
-    }
-    if (profileUsername) {
-      profileUsername.textContent = user.displayName || "Username not set";
-    }
-    profileEmail.textContent = user.email || "Email unavailable";
-    if (profileToggle) {
-      profileToggle.textContent = user.displayName || "Profile";
-    }
-  } else if (user && !isCreatingAccount) {
-    window.location.replace("loggedin.html");
-  }
+onAuthStateChanged(auth, user => {
+    loadUser(user).catch(error => {
+        console.error("Unable to load the signed-in user's profile.", error);
+        alert("Unable to load your profile right now.");
+    });
 });
 
-if (signupForm) {
-  signupForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    isCreatingAccount = true;
-    submitAuthForm(
-      signupForm,
-      async (email, password, formData) => {
-        const username = String(formData.get("username")).trim();
-        if (!username) {
-          throw new Error("Please enter a username.");
-        }
-        const { user } = await createUserWithEmailAndPassword(auth, email, password);
-        try {
-          await updateProfile(user, { displayName: username });
-        } catch (error) {
-          await signOut(auth);
-          throw error;
-        }
-        return user;
-      },
-      (email) => `Account created for ${email}.`
-    ).then((created) => {
-      isCreatingAccount = false;
-      if (created) {
-        window.location.replace("loggedin.html");
-      }
-    });
-  });
-}
+// Dropdown toggle
+document.querySelector(".profile-btn").addEventListener("click", function(e) {
+    e.stopPropagation();
+    document.getElementById("profileDropdown").classList.toggle("open");
+    this.classList.toggle("active");
+});
 
-if (signOutButton) {
-  signOutButton.addEventListener("click", async () => {
-    signOutButton.disabled = true;
-    try {
-      await signOut(auth);
-    } catch (error) {
-      signOutButton.disabled = false;
-      if (authMessage) {
-        authMessage.textContent = error.message || "Could not log out. Please try again.";
-      }
+// Close when clicking outside
+document.addEventListener("click", function(e) {
+    if (!e.target.closest(".profile-wrapper")) {
+        document.getElementById("profileDropdown").classList.remove("open");
+        document.querySelector(".profile-btn").classList.remove("active");
     }
-  });
-}
+});
 
-if (loginForm) {
-  loginForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    submitAuthForm(
-      loginForm,
-      (email, password) => signInWithEmailAndPassword(auth, email, password).then(({ user }) => user),
-      (email) => `Logged in as ${email}.`
-    );
-  });
-}
+// Sign in
+document.getElementById("dropdownLoginBtn").addEventListener("click", async function() {
+    const email = document.getElementById("dropdownEmail").value.trim();
+    const pass = document.getElementById("dropdownPassword").value;
+
+    if (!email || !pass) return;
+
+    try {
+        await signInWithEmailAndPassword(auth, email, pass);
+        document.getElementById("profileDropdown").classList.remove("open");
+    } catch (err) {
+        if (err.code === "auth/user-not-found") {
+            alert("Account not found");
+        } else if (err.code === "auth/wrong-password") {
+            alert("Incorrect password");
+        } else if (err.code === "auth/invalid-email") {
+            alert("Invalid email address");
+        } else {
+            alert(err.message);
+        }
+    }
+});
+
+// Sign up
+document.getElementById("dropdownSignUpBtn").addEventListener("click", async function() {
+    const firstName = document.getElementById("signUpFirstName").value.trim();
+    const lastName = document.getElementById("signUpLastName").value.trim();
+    const email = document.getElementById("signUpEmail").value.trim();
+    const pass = document.getElementById("signUpPassword").value;
+
+    if (!firstName || !lastName || !email || !pass) {
+        alert("All fields are required");
+        return;
+    }
+
+    if (pass.length < 6) {
+        alert("Password must be at least 6 characters");
+        return;
+    }
+
+    try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+        const user = userCredential.user;
+
+        await setDoc(doc(db, "users", user.uid), {
+            firstName,
+            lastName,
+            email,
+            role: "guest",
+            clearance: 1,
+        });
+
+        document.getElementById("profileDropdown").classList.remove("open");
+
+    } catch (err) {
+        if (err.code === "auth/email-already-in-use") {
+            alert("Email already registered");
+        } else if (err.code === "auth/invalid-email") {
+            alert("Invalid email address");
+        } else if (err.code === "auth/weak-password") {
+            alert("Password must be at least 6 characters");
+        } else {
+            alert(err.message);
+        }
+    }
+});
+
+// Toggle between sign in and sign up forms
+document.getElementById("showSignUp").addEventListener("click", function() {
+    document.getElementById("signInForm").style.display = "none";
+    document.getElementById("signUpForm").style.display = "flex";
+});
+
+document.getElementById("showSignIn").addEventListener("click", function() {
+    document.getElementById("signUpForm").style.display = "none";
+    document.getElementById("signInForm").style.display = "flex";
+});
+
+// Sign out
+document.querySelector(".signout").addEventListener("click", async function() {
+    await signOut(auth);
+    document.getElementById("profileDropdown").classList.remove("open");
+});
+
+// Forgot password
+document.getElementById("forgotPassword")?.addEventListener("click", async function() {
+    const email = document.getElementById("dropdownEmail").value.trim();
+    if (!email) {
+        alert("Enter your email first then click Forgot Password");
+        return;
+    }
+    try {
+        await sendPasswordResetEmail(auth, email);
+        alert("Password reset email sent — check your inbox");
+    } catch (err) {
+        if (err.code === "auth/user-not-found") {
+            alert("No account found with that email");
+        } else {
+            alert(err.message);
+        }
+    }
+});
